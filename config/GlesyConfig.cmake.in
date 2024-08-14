@@ -1,0 +1,36 @@
+if(CMAKE_VERSION VERSION_LESS 3.3)
+    set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE "Glesy requires CMake 3.3 or later")
+    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+    return()
+endif()
+cmake_minimum_required(VERSION 3.3...3.21)
+
+@PACKAGE_INIT@
+
+# Work out the set of components to load
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
+    set(comps ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
+    if(Development IN_LIST comps AND NOT Runtime IN_LIST comps)
+        list(APPEND comps Runtime)
+    endif()
+else()
+    set(comps Runtime Development)
+endif()
+
+# Store components to load in a safer variable name
+set(${CMAKE_FIND_PACKAGE_NAME}_comps ${comps})
+
+# Figure out all components are present
+foreach(comp IN LISTS ${CMAKE_FIND_PACKAGE_NAME}_comps)
+    if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED_${comp}
+       AND NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/Glesy{comp}.cmake)
+        set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE "Glesy missing required component: ${comp}")
+        set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+        return()
+    endif()
+endforeach()
+
+# Include all components one by one
+foreach(comp IN LISTS ${CMAKE_FIND_PACKAGE_NAME}_comps)
+    include(${CMAKE_CURRENT_LIST_DIR}/Glesy{comp}.cmake OPTIONAL)
+endforeach()
