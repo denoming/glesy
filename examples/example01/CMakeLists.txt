@@ -15,9 +15,7 @@ target_sources(${TARGET}
         src/example01.cpp
 )
 
-target_link_libraries(${TARGET}
-    PRIVATE Glesy::Glesy
-)
+target_link_libraries(${TARGET} Glesy::Glesy)
 
 target_compile_features(${TARGET} PRIVATE cxx_std_20)
 

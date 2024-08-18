@@ -1,0 +1,1 @@
+find_package(OpenGL REQUIRED COMPONENTS EGL GLES3)

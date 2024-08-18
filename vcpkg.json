@@ -1,0 +1,12 @@
+{
+  "name": "glesy",
+  "version-semver": "1.0.0",
+  "license": "MIT",
+  "maintainers": [
+    "Denys Asauliak <denoming@gmail.com>"
+  ],
+  "supports": "linux and !windows",
+  "dependencies": [
+    "spdlog"
+  ]
+}
