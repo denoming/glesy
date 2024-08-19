@@ -92,7 +92,7 @@ private:
     void
     callShutdownFunc(void* userData) const;
 
-    void
+    [[nodiscard]] bool
     swapBuffers() const;
 
 private:
