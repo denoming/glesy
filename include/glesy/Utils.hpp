@@ -23,4 +23,13 @@ loadShader(GLenum type, const GLchar* shaderSrc);
 GLuint
 loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc);
 
+/**
+ * Validates given program
+ * @warning Slow operation, do not use in drawing routine
+ * @param program The program object handle
+ * @return @c true if program is valid, @c false - otherwise
+ */
+[[nodiscard]] bool
+validateProgram(GLuint program);
+
 } // namespace glesy

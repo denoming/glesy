@@ -12,6 +12,7 @@ loadShader(GLenum type, const GLchar* shaderSrc)
     // Create the shader object
     const GLuint shader = glCreateShader(type);
     if (shader == 0) {
+        SPDLOG_ERROR("Unable to create shader: error<{}>", eglGetError());
         return 0;
     }
 
@@ -24,10 +25,9 @@ loadShader(GLenum type, const GLchar* shaderSrc)
     // Check the compile status
     GLint compiled{};
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    if (not compiled) {
+    if (compiled != GL_TRUE) {
         GLint infoLen{};
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
-        if (infoLen > 1) {
+        if (glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen); infoLen > 1) {
             std::vector<GLchar> infoLog(infoLen);
             glGetShaderInfoLog(shader, infoLen, nullptr, infoLog.data());
             SPDLOG_ERROR("Shader compilation error: {}", infoLog.data());
@@ -59,6 +59,7 @@ loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
     // Create the program object
     const GLuint programObject = glCreateProgram();
     if (programObject == 0) {
+        SPDLOG_ERROR("Unable to create program: error<{}>", eglGetError());
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
         return 0;
@@ -73,10 +74,9 @@ loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
     // Check the link status
     GLint linked{};
     glGetProgramiv(programObject, GL_LINK_STATUS, &linked);
-    if (not linked) {
+    if (linked != GL_TRUE) {
         GLint infoLen = 0;
-        glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLen);
-        if (infoLen > 1) {
+        if (glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &infoLen); infoLen > 1) {
             std::vector<GLchar> infoLog(infoLen);
             glGetProgramInfoLog(programObject, infoLen, nullptr, infoLog.data());
             SPDLOG_ERROR("Program linking error: {}", infoLog.data());
@@ -90,6 +90,26 @@ loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
     glDeleteShader(fragmentShader);
 
     return programObject;
+}
+
+[[nodiscard]] bool
+validateProgram(const GLuint program)
+{
+    glValidateProgram(program);
+
+    GLint valid{};
+    glGetProgramiv(program, GL_VALIDATE_STATUS, &valid);
+    if (valid != GL_TRUE) {
+        GLint infoLen = 0;
+        if (glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLen); infoLen > 1) {
+            std::vector<GLchar> infoLog(infoLen);
+            glGetProgramInfoLog(program, infoLen, nullptr, infoLog.data());
+            SPDLOG_ERROR("Program validation error: {}", infoLog.data());
+        }
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace glesy
