@@ -22,4 +22,4 @@ target_sources(${TARGET}
         X11/NativeWindow.cpp
 )
 
-target_compile_features(${TARGET} PUBLIC cxx_std_20)
+target_compile_features(${TARGET} PUBLIC cxx_std_23)

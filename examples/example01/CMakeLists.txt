@@ -17,7 +17,7 @@ target_sources(${TARGET}
 
 target_link_libraries(${TARGET} Glesy::Glesy)
 
-target_compile_features(${TARGET} PRIVATE cxx_std_20)
+target_compile_features(${TARGET} PRIVATE cxx_std_23)
 
 install(
     TARGETS ${TARGET}

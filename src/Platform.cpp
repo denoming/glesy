@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include <cstring>
+#include <string_view>
 
 namespace {
 
@@ -13,12 +13,12 @@ namespace {
  * @return
  */
 EGLint
-getContextRenderType(const EGLDisplay display)
+getContextRenderType(EGLDisplay display)
 {
 #ifdef EGL_KHR_create_context
     // Check whether EGL_KHR_create_context is in the extension string
     if (const char* extensions = eglQueryString(display, EGL_EXTENSIONS);
-        extensions != nullptr and strstr(extensions, "EGL_KHR_create_context")) {
+        extensions != nullptr and std::string_view{extensions}.contains("EGL_KHR_create_context")) {
         return EGL_OPENGL_ES3_BIT_KHR;
     }
 #endif
