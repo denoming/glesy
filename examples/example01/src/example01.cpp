@@ -83,7 +83,7 @@ main()
     window.create("Example01", kWidth, kHeight);
 
     Platform platform;
-    if (not platform.initialize(display, window, ES_WINDOW_RGB)) {
+    if (not platform.configure(display, window, ES_WINDOW_RGB)) {
         return EXIT_FAILURE;
     }
 

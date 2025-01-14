@@ -38,17 +38,26 @@ public:
     registerShutdownFunc(ShutdownFunc callback);
 
     [[nodiscard]] bool
-    initialize(const IWindow& window, GLuint flags);
+    configure(const IWindow& window, GLuint flags);
 
     [[nodiscard]] bool
-    initialize(const IDisplay& display, const IWindow& window, GLuint flags);
+    configure(const IDisplay& display, const IWindow& window, GLuint flags);
+
+    [[nodiscard]] bool
+    configure(EGLint& width, EGLint& height, GLuint flags);
+
+    [[nodiscard]] bool
+    configure(const IDisplay& display, EGLint& width, EGLint& height, GLuint flags);
 
     [[nodiscard]] bool
     process(const IWindow& window, void* userData) const;
 
 private:
     [[nodiscard]] bool
-    initialize(EGLNativeWindowType window, GLuint flags);
+    setup(EGLNativeWindowType window, GLuint flags);
+
+    [[nodiscard]] bool
+    setup(EGLint& width, EGLint& height, GLuint flags);
 
     [[nodiscard]] EGLConfig
     chooseConfig(std::initializer_list<EGLint> attributes) const;
@@ -63,7 +72,10 @@ private:
     setupDisplay(EGLNativeDisplayType display);
 
     [[nodiscard]] bool
-    createSurface(EGLNativeWindowType window, EGLConfig config);
+    createWindowSurface(EGLNativeWindowType window, EGLConfig config);
+
+    [[nodiscard]] bool
+    createPbufferSurface(EGLint& width, EGLint& height, EGLConfig config);
 
     [[nodiscard]] bool
     createContext(EGLConfig config);

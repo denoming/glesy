@@ -72,25 +72,44 @@ Platform::registerShutdownFunc(ShutdownFunc callback)
     _shutdownFunc = std::move(callback);
 }
 
-[[nodiscard]] bool
-Platform::initialize(const IWindow& window, const GLuint flags)
+bool
+Platform::configure(const IWindow& window, const GLuint flags)
 {
     if (not setupDisplay()) {
         SPDLOG_ERROR("Unable to get EGL display");
         return false;
     }
-    return initialize(window.getHandle(), flags);
+    return setup(window.getHandle(), flags);
 }
 
 bool
-Platform::initialize(const IDisplay& display, const IWindow& window, const GLuint flags)
+Platform::configure(const IDisplay& display, const IWindow& window, const GLuint flags)
 {
     if (not setupDisplay(display.getHandle())) {
         SPDLOG_ERROR("Unable to get EGL display");
         return false;
     }
+    return setup(window.getHandle(), flags);
+}
 
-    return initialize(window.getHandle(), flags);
+bool
+Platform::configure(EGLint& width, EGLint& height, GLuint flags)
+{
+    if (not setupDisplay()) {
+        SPDLOG_ERROR("Unable to get EGL display");
+        return false;
+    }
+    return setup(width, height, flags);
+}
+
+bool
+Platform::configure(const IDisplay& display, EGLint& width, EGLint& height, GLuint flags)
+{
+    if (not setupDisplay(display.getHandle())) {
+        SPDLOG_ERROR("Unable to get EGL display");
+        return false;
+    }
+    return setup(width, height, flags);
 }
 
 bool
@@ -110,7 +129,7 @@ Platform::process(const IWindow& window, void* userData) const
 }
 
 bool
-Platform::initialize(EGLNativeWindowType window, const GLuint flags)
+Platform::setup(EGLNativeWindowType window, const GLuint flags)
 {
     EGLint majorVersion{}, minorVersion{};
     if (eglInitialize(_display, &majorVersion, &minorVersion) == EGL_FALSE) {
@@ -136,8 +155,8 @@ Platform::initialize(EGLNativeWindowType window, const GLuint flags)
         return false;
     }
 
-    if (not createSurface(window, config)) {
-        SPDLOG_ERROR("Unable to create EGL surface");
+    if (not createWindowSurface(window, config)) {
+        SPDLOG_ERROR("Unable to create EGL window surface");
         return false;
     }
 
@@ -149,7 +168,48 @@ Platform::initialize(EGLNativeWindowType window, const GLuint flags)
     return true;
 }
 
-[[nodiscard]] EGLConfig
+bool
+Platform::setup(EGLint& width, EGLint& height, GLuint flags)
+{
+    EGLint majorVersion{}, minorVersion{};
+    if (eglInitialize(_display, &majorVersion, &minorVersion) == EGL_FALSE) {
+        SPDLOG_ERROR("Unable to initialize EGL: error<{}>", eglGetError());
+        return false;
+    }
+
+    // clang-format off
+    EGLConfig config = chooseConfig({
+        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+        EGL_RED_SIZE, 5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE, 5,
+        EGL_ALPHA_SIZE, (flags & ES_WINDOW_ALPHA) ? 8 : EGL_DONT_CARE,
+        EGL_DEPTH_SIZE, (flags & ES_WINDOW_DEPTH) ? 8 : EGL_DONT_CARE,
+        EGL_STENCIL_SIZE, (flags & ES_WINDOW_STENCIL) ? 8 : EGL_DONT_CARE,
+        EGL_SAMPLE_BUFFERS, (flags & ES_WINDOW_MULTISAMPLE) ? 1 : 0,
+        EGL_RENDERABLE_TYPE, getContextRenderType(_display),
+        EGL_NONE
+    });
+    // clang-format on
+    if (not config) {
+        SPDLOG_ERROR("Unable to get EGL config");
+        return false;
+    }
+
+    if (not createPbufferSurface(width, height, config)) {
+        SPDLOG_ERROR("Unable to create EGL pbuffer surface");
+        return false;
+    }
+
+    if (not createContext(config)) {
+        SPDLOG_ERROR("Unable to set current EGL context");
+        return false;
+    }
+
+    return true;
+}
+
+EGLConfig
 Platform::chooseConfig(const std::initializer_list<EGLint> attributes) const
 {
     EGLConfig output{};
@@ -188,13 +248,41 @@ Platform::setupDisplay(EGLNativeDisplayType display)
 }
 
 bool
-Platform::createSurface(const EGLNativeWindowType window, EGLConfig config)
+Platform::createWindowSurface(const EGLNativeWindowType window, EGLConfig config)
 {
     _surface = eglCreateWindowSurface(_display, config, window, nullptr);
     if (_surface == EGL_NO_SURFACE) {
-        SPDLOG_ERROR("Unable to create EGL surface: error<{}>", eglGetError());
+        SPDLOG_ERROR("Unable to create EGL window surface: error<{}>", eglGetError());
         return false;
     }
+    return true;
+}
+
+bool
+Platform::createPbufferSurface(EGLint& width, EGLint& height, EGLConfig config)
+{
+    // clang-format off
+    const EGLint attribList[] = {
+        EGL_WIDTH, width,
+        EGL_HEIGHT, height,
+        EGL_LARGEST_PBUFFER, EGL_TRUE,
+        EGL_NONE
+    };
+    // clang-format on
+
+    _surface = eglCreatePbufferSurface(_display, config, attribList);
+    if (_surface == EGL_NO_SURFACE) {
+        SPDLOG_ERROR("Unable to create EGL pbuffer surface: error<{}>", eglGetError());
+        return false;
+    }
+
+    if (eglQuerySurface(_display, _surface, EGL_WIDTH, &width) != EGL_FALSE) {
+        SPDLOG_ERROR("Unable to retrieve pbuffer surface width: error<{}>", eglGetError());
+    }
+    if (eglQuerySurface(_display, _surface, EGL_HEIGHT, &height) != EGL_FALSE) {
+        SPDLOG_ERROR("Unable to retrieve pbuffer surface height: error<{}>", eglGetError());
+    }
+
     return true;
 }
 
