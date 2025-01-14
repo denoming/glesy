@@ -137,13 +137,7 @@ Platform::initialize(EGLNativeWindowType window, const GLuint flags)
 {
     EGLint majorVersion{}, minorVersion{};
     if (eglInitialize(_display, &majorVersion, &minorVersion) == EGL_FALSE) {
-        if (eglGetError() == EGL_NOT_INITIALIZED) {
-            SPDLOG_ERROR("EGL cannot be initialized");
-        } else if (eglGetError() == EGL_BAD_DISPLAY) {
-            SPDLOG_ERROR("Given display is invalid");
-        } else {
-            SPDLOG_ERROR("Unknown error on initialize EGL");
-        }
+        SPDLOG_ERROR("Unable to initialize EGL: error<{}>", eglGetError());
         return false;
     }
 
@@ -187,7 +181,7 @@ Platform::chooseConfig(const GLuint flags) const
 
     EGLint numConfigs{};
     if (eglChooseConfig(_display, attribList, &output, 1, &numConfigs) == EGL_FALSE) {
-        SPDLOG_ERROR("Unable to get EGL config");
+        SPDLOG_ERROR("Unable to get EGL config: error<{}>", eglGetError());
         return nullptr;
     }
     if (numConfigs < 1) {
@@ -223,7 +217,7 @@ Platform::createSurface(const EGLNativeWindowType window, EGLConfig config)
 {
     _surface = eglCreateWindowSurface(_display, config, window, nullptr);
     if (_surface == EGL_NO_SURFACE) {
-        SPDLOG_ERROR("Unable to create EGL surface");
+        SPDLOG_ERROR("Unable to create EGL surface: error<{}>", eglGetError());
         return false;
     }
     return true;
@@ -235,12 +229,12 @@ Platform::createContext(EGLConfig config)
     constexpr EGLint contextAttribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
     _context = eglCreateContext(_display, config, EGL_NO_CONTEXT, contextAttribs);
     if (_context == EGL_NO_CONTEXT) {
-        SPDLOG_ERROR("Unable to create EGL context");
+        SPDLOG_ERROR("Unable to create EGL context: error<{}>", eglGetError());
         return false;
     }
 
     if (eglMakeCurrent(_display, _surface, _surface, _context) == EGL_FALSE) {
-        SPDLOG_ERROR("Unable to set current EGL context");
+        SPDLOG_ERROR("Unable to set current EGL context: error<{}>", eglGetError());
         return false;
     }
 
