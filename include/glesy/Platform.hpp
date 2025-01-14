@@ -5,6 +5,7 @@
 #include "glesy/IDisplay.hpp"
 
 #include <functional>
+#include <initializer_list>
 
 namespace glesy {
 
@@ -48,6 +49,9 @@ public:
 private:
     [[nodiscard]] bool
     initialize(EGLNativeWindowType window, GLuint flags);
+
+    [[nodiscard]] EGLConfig
+    chooseConfig(std::initializer_list<EGLint> attributes) const;
 
     [[nodiscard]] EGLConfig
     chooseConfig(GLuint flags) const;

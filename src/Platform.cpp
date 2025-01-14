@@ -90,30 +90,7 @@ Platform::initialize(const IDisplay& display, const IWindow& window, const GLuin
         return false;
     }
 
-    EGLint majorVersion{};
-    EGLint minorVersion{};
-    if (not eglInitialize(_display, &majorVersion, &minorVersion)) {
-        SPDLOG_ERROR("Unable to initialize EGL");
-        return false;
-    }
-
-    EGLConfig config = chooseConfig(flags);
-    if (not config) {
-        SPDLOG_ERROR("Unable to get EGL config");
-        return false;
-    }
-
-    if (not createSurface(window.getHandle(), config)) {
-        SPDLOG_ERROR("Unable to create EGL surface");
-        return false;
-    }
-
-    if (not createContext(config)) {
-        SPDLOG_ERROR("Unable to set current EGL context");
-        return false;
-    }
-
-    return true;
+    return initialize(window.getHandle(), flags);
 }
 
 bool
@@ -141,7 +118,19 @@ Platform::initialize(EGLNativeWindowType window, const GLuint flags)
         return false;
     }
 
-    EGLConfig config = chooseConfig(flags);
+    // clang-format off
+    EGLConfig config = chooseConfig({
+        EGL_RED_SIZE, 5,
+        EGL_GREEN_SIZE, 6,
+        EGL_BLUE_SIZE, 5,
+        EGL_ALPHA_SIZE, (flags & ES_WINDOW_ALPHA) ? 8 : EGL_DONT_CARE,
+        EGL_DEPTH_SIZE, (flags & ES_WINDOW_DEPTH) ? 8 : EGL_DONT_CARE,
+        EGL_STENCIL_SIZE, (flags & ES_WINDOW_STENCIL) ? 8 : EGL_DONT_CARE,
+        EGL_SAMPLE_BUFFERS, (flags & ES_WINDOW_MULTISAMPLE) ? 1 : 0,
+        EGL_RENDERABLE_TYPE, getContextRenderType(_display),
+        EGL_NONE
+    });
+    // clang-format on
     if (not config) {
         SPDLOG_ERROR("Unable to get EGL config");
         return false;
@@ -160,27 +149,13 @@ Platform::initialize(EGLNativeWindowType window, const GLuint flags)
     return true;
 }
 
-EGLConfig
-Platform::chooseConfig(const GLuint flags) const
+[[nodiscard]] EGLConfig
+Platform::chooseConfig(const std::initializer_list<EGLint> attributes) const
 {
     EGLConfig output{};
 
-    // clang-format off
-    const EGLint attribList[] = {
-        EGL_RED_SIZE, 5,
-        EGL_GREEN_SIZE, 6,
-        EGL_BLUE_SIZE, 5,
-        EGL_ALPHA_SIZE, (flags & ES_WINDOW_ALPHA) ? 8 : EGL_DONT_CARE,
-        EGL_DEPTH_SIZE, (flags & ES_WINDOW_DEPTH) ? 8 : EGL_DONT_CARE,
-        EGL_STENCIL_SIZE, (flags & ES_WINDOW_STENCIL) ? 8 : EGL_DONT_CARE,
-        EGL_SAMPLE_BUFFERS, (flags & ES_WINDOW_MULTISAMPLE) ? 1 : 0,
-        EGL_RENDERABLE_TYPE, getContextRenderType(_display),
-        EGL_NONE
-    };
-    // clang-format on
-
     EGLint numConfigs{};
-    if (eglChooseConfig(_display, attribList, &output, 1, &numConfigs) == EGL_FALSE) {
+    if (eglChooseConfig(_display, std::data(attributes), &output, 1, &numConfigs) == EGL_FALSE) {
         SPDLOG_ERROR("Unable to get EGL config: error<{}>", eglGetError());
         return nullptr;
     }
