@@ -1,6 +1,7 @@
 #include <iostream>
 
-#include "glesy/X11/Window.hpp"
+#include "glesy/X11/NativeWindow.hpp"
+#include "glesy/X11/NativeDisplay.hpp"
 #include "glesy/Api.h"
 #include "glesy/Platform.hpp"
 #include "glesy/Utils.hpp"
@@ -77,11 +78,12 @@ shutdown(void* data)
 int
 main()
 {
-    x11::Window window;
+    x11::NativeDisplay display;
+    x11::NativeWindow window{display};
     window.create("Example01", kWidth, kHeight);
 
     Platform platform;
-    if (not platform.initialize(window, ES_WINDOW_RGB)) {
+    if (not platform.initialize(display, window, ES_WINDOW_RGB)) {
         return EXIT_FAILURE;
     }
 

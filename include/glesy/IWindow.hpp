@@ -4,16 +4,12 @@
 
 namespace glesy {
 
-class NativeWindow {
+class IWindow {
 public:
-    virtual ~NativeWindow() = default;
-
-    [[nodiscard]] virtual EGLNativeDisplayType
-    getNativeDisplay() const
-        = 0;
+    virtual ~IWindow() = default;
 
     [[nodiscard]] virtual EGLNativeWindowType
-    getNativeWindow() const
+    getHandle() const
         = 0;
 
     [[nodiscard]] virtual bool

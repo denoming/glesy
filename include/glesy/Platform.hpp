@@ -1,7 +1,8 @@
 #pragma once
 
 #include "glesy/Api.h"
-#include "glesy/NativeWindow.hpp"
+#include "glesy/IWindow.hpp"
+#include "glesy/IDisplay.hpp"
 
 #include <functional>
 
@@ -36,12 +37,33 @@ public:
     registerShutdownFunc(ShutdownFunc callback);
 
     [[nodiscard]] bool
-    initialize(const NativeWindow& window, GLuint flags);
+    initialize(const IWindow& window, GLuint flags);
 
     [[nodiscard]] bool
-    process(const NativeWindow& window, void* userData) const;
+    initialize(const IDisplay& display, const IWindow& window, GLuint flags);
+
+    [[nodiscard]] bool
+    process(const IWindow& window, void* userData) const;
 
 private:
+    [[nodiscard]] bool
+    initialize(EGLNativeWindowType window, GLuint flags);
+
+    [[nodiscard]] EGLConfig
+    chooseConfig(GLuint flags) const;
+
+    [[nodiscard]] bool
+    setupDisplay();
+
+    [[nodiscard]] bool
+    setupDisplay(EGLNativeDisplayType display);
+
+    [[nodiscard]] bool
+    createSurface(EGLNativeWindowType window, EGLConfig config);
+
+    [[nodiscard]] bool
+    createContext(EGLConfig config);
+
     [[nodiscard]] bool
     callPrepareFunc(void* userData) const;
 

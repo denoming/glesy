@@ -18,7 +18,8 @@ target_sources(${TARGET}
     PRIVATE
         Platform.cpp
         Utils.cpp
-        X11/Window.cpp
+        X11/NativeDisplay.cpp
+        X11/NativeWindow.cpp
 )
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)

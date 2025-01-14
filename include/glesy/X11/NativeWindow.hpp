@@ -1,6 +1,7 @@
 #pragma once
 
-#include "glesy/NativeWindow.hpp"
+#include "glesy/IWindow.hpp"
+#include <glesy/X11/NativeDisplay.hpp>
 
 #include <X11/Xlib.h>
 
@@ -8,19 +9,16 @@
 
 namespace glesy::x11 {
 
-class Window final : public NativeWindow {
+class NativeWindow final : public IWindow {
 public:
-    Window();
+    explicit NativeWindow(NativeDisplay& display);
 
-    ~Window() override;
+    ~NativeWindow() override;
 
-    explicit Window(std::string_view display);
-
-    [[nodiscard]] EGLNativeDisplayType
-    getNativeDisplay() const override;
+    explicit NativeWindow(std::string_view display);
 
     [[nodiscard]] EGLNativeWindowType
-    getNativeWindow() const override;
+    getHandle() const override;
 
     void
     create(std::string_view title, unsigned int width, unsigned int height);
@@ -32,7 +30,7 @@ public:
     awaitClosing() const override;
 
 private:
-    ::Display* _display{};
+    NativeDisplay& _display;
     ::Window _window{};
     Atom _wmDeleteMessage{};
     Atom _wmState{};
