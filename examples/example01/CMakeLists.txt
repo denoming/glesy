@@ -1,25 +1,23 @@
 include(GNUInstallDirs)
 
-set(TARGET glesy-example01)
+add_executable(glesy-example01 "")
+add_executable(Glesy::Example01 ALIAS glesy-example01)
 
-add_executable(${TARGET} "")
-add_executable(Glesy::Example01 ALIAS ${TARGET})
-
-set_target_properties(${TARGET}
+set_target_properties(glesy-example01
     PROPERTIES
-    OUTPUT_NAME example01
+        OUTPUT_NAME example01
 )
 
-target_sources(${TARGET}
+target_sources(glesy-example01
     PRIVATE
         src/example01.cpp
 )
 
-target_link_libraries(${TARGET} Glesy::Glesy)
+target_link_libraries(glesy-example01 Glesy::Glesy)
 
-target_compile_features(${TARGET} PRIVATE cxx_std_23)
+target_compile_features(glesy-example01 PRIVATE cxx_std_23)
 
 install(
-    TARGETS ${TARGET}
+    TARGETS glesy-example01
     COMPONENT GlesyRuntime
 )
