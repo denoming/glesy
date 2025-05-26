@@ -104,7 +104,7 @@ main()
 {
     x11::NativeDisplay display;
     x11::NativeWindow window{display};
-    window.create("Example01", kWidth, kHeight);
+    window.create("Example02", kWidth, kHeight);
 
     Platform platform;
     if (not platform.configure(display, window, ES_WINDOW_RGB)) {
