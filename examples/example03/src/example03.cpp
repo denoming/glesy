@@ -26,7 +26,7 @@ static constexpr unsigned int kHeight = 600;
 struct UserData {
     GLuint programObject{};
     GLint offsetLoc{};
-    std::array<GLuint, 2> vboIds{};
+    GLuint vboIds[2]{};
 };
 
 static auto vShader = R"glsl(
@@ -69,15 +69,14 @@ drawPrimitiveWithoutVbo(const GLfloat* vertices,
     glEnableVertexAttribArray(VERTEX_COLOR_INDEX);
 
     // Load vertices positions
-    glVertexAttribPointer(VERTEX_POS_INDEX, VERTEX_POS_SIZE, GL_FLOAT, GL_FALSE, stride, vertices);
+    GLuint offset = 0;
+    glVertexAttribPointer(
+        VERTEX_POS_INDEX, VERTEX_POS_SIZE, GL_FLOAT, GL_FALSE, stride, vertices + offset);
 
     // Load vertices colors
-    glVertexAttribPointer(VERTEX_COLOR_INDEX,
-                          VERTEX_COLOR_SIZE,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          stride,
-                          vertices + VERTEX_POS_SIZE);
+    offset += VERTEX_POS_SIZE;
+    glVertexAttribPointer(
+        VERTEX_COLOR_INDEX, VERTEX_COLOR_SIZE, GL_FLOAT, GL_FALSE, stride, vertices + offset);
 
     // Draw
     glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, indices);
@@ -88,7 +87,7 @@ drawPrimitiveWithoutVbo(const GLfloat* vertices,
 }
 
 void
-drawPrimitiveWithVbo(UserData& data,
+drawPrimitiveWithMapping(UserData& data,
                      const GLint numVertices,
                      const GLfloat* vertices,
                      const GLint stride,
@@ -97,7 +96,7 @@ drawPrimitiveWithVbo(UserData& data,
 {
     if (data.vboIds[0] == 0 and data.vboIds[1] == 0) {
         // Create vertex array objects
-        glGenBuffers(2, data.vboIds.data());
+        glGenBuffers(2, data.vboIds);
         // Load data into 1st VBO
         glBindBuffer(GL_ARRAY_BUFFER, data.vboIds[0]);
         glBufferData(GL_ARRAY_BUFFER, stride * numVertices, vertices, GL_STATIC_DRAW);
@@ -129,7 +128,7 @@ drawPrimitiveWithVbo(UserData& data,
                           stride,
                           reinterpret_cast<const void*>(offset));
 
-    glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, nullptr);
+    glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, 0);
 
     glDisableVertexAttribArray(VERTEX_POS_INDEX);
     glDisableVertexAttribArray(VERTEX_COLOR_INDEX);
@@ -158,7 +157,7 @@ draw(void* data)
     auto* userData = static_cast<UserData*>(data);
 
     // The vertices, with (x, y, z) and (r, g, b, a) per-vertex
-    constexpr GLfloat vertices[3 * (VERTEX_POS_SIZE + VERTEX_COLOR_SIZE)] = {
+    static const GLfloat vertices[3 * (VERTEX_POS_SIZE + VERTEX_COLOR_SIZE)] = {
         -0.5f, 0.5f,  0.0f,       // v0
         1.0f,  0.0f,  0.0f, 1.0f, // c0
         -1.0f, -0.5f, 0.0f,       // v1
@@ -168,7 +167,7 @@ draw(void* data)
     };
 
     // Index buffer data
-    const GLushort indices[3] = {0, 1, 2};
+    static const GLushort indices[3] = {0, 1, 2};
 
     glViewport(0, 0, kWidth, kHeight);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -179,12 +178,7 @@ draw(void* data)
     drawPrimitiveWithoutVbo(vertices, stride, 3, indices);
 
     glUniform1f(userData->offsetLoc, 1.0f);
-    drawPrimitiveWithVbo(*userData,
-                         3,
-                         vertices,
-                         sizeof(GLfloat) * (VERTEX_POS_SIZE + VERTEX_COLOR_SIZE),
-                         3,
-                         indices);
+    drawPrimitiveWithMapping(*userData, 3, vertices, stride, 3, indices);
 }
 
 static void
@@ -192,7 +186,8 @@ shutdown(void* data)
 {
     const auto* userData = static_cast<UserData*>(data);
 
-    glDeleteBuffers(2, userData->vboIds.data());
+    glDeleteProgram(userData->programObject);
+    glDeleteBuffers(2, userData->vboIds);
 }
 
 int
