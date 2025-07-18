@@ -9,5 +9,6 @@ include(cmake/ProjectOptions.cmake)
 include(cmake/ProjectConfigs.cmake)
 include(cmake/ProjectInstall.cmake)
 
+add_subdirectory(dep)
 add_subdirectory(lib)
 add_subdirectory(src)
