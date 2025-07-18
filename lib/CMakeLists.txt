@@ -8,16 +8,15 @@ target_include_directories(${TARGET}
 )
 
 target_link_libraries(${TARGET}
-    PRIVATE OpenGL::GLES3 OpenGL::EGL  X11::X11
+    PUBLIC Glad::Glad
+           glfw
     PUBLIC spdlog::spdlog
 )
 
 target_sources(${TARGET}
     PRIVATE
-        src/Platform.cpp
         src/Utils.cpp
-        src/X11/NativeDisplay.cpp
-        src/X11/NativeWindow.cpp
+        src/Shader.cpp
 )
 
 target_compile_features(${TARGET} PUBLIC cxx_std_23)

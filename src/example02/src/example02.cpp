@@ -1,30 +1,37 @@
 /**
- * Example 02: Demonstrates using constant vertex attribute and vertex arrays
+ * Example 02: Demonstrates using VBO and VAO objects.
+ *             Use constant vertex attribute to set color.
  **/
 
-#include <iostream>
-
-#include "glesy/X11/NativeWindow.hpp"
-#include "glesy/X11/NativeDisplay.hpp"
 #include "glesy/Api.h"
-#include "glesy/Platform.hpp"
-#include "glesy/Utils.hpp"
+#include "glesy/Shader.hpp"
+
+#include <GLFW/glfw3.h>
 
 #include <spdlog/spdlog.h>
 
-using namespace glesy;
+static constexpr unsigned int kWidth{800};
+static constexpr unsigned int kHeight{600};
+static constexpr int kVertexPosSize{3};
+static constexpr int kVertexPosIndex{0};
+static constexpr int kVertexColorSize{4};
+static constexpr int kVertexColorIndex{1};
 
-static constexpr unsigned int kWidth = 800;
-static constexpr unsigned int kHeight = 600;
-
-struct UserData {
-    GLuint programObject{};
+// clang-format off
+static constexpr GLfloat kVertexData[] = {
+    0.0f,  0.5f,  0.0f,       // v0
+    1.0f,  0.0f,  0.0f, 1.0f, // c0
+    -0.5f, -0.5f, 0.0f,       // v1
+    0.0f,  1.0f,  0.0f, 1.0f, // c1
+    0.5f,  -0.5f, 0.0f,       // v2
+    0.0f,  0.0f,  1.0f, 1.0f, // c2
 };
+// clang-format on
 
 static auto vShader = R"glsl(
-#version 300 es
-layout(location = 0) in vec4 a_color;
-layout(location = 1) in vec4 a_position;
+#version 330 core
+layout(location = 0) in vec4 a_position;
+layout(location = 1) in vec4 a_color;
 out vec4 v_color;
 void main()
 {
@@ -34,7 +41,7 @@ void main()
 )glsl";
 
 static auto fShader = R"glsl(
-#version 300 es
+#version 330 core
 precision mediump float;
 in vec4 v_color;
 out vec4 o_fragColor;
@@ -44,82 +51,99 @@ void main()
 }
 )glsl";
 
-static bool
-prepare(void* data)
-{
-    auto* userData = static_cast<UserData*>(data);
-    const GLuint programObject = loadProgram(vShader, fShader);
-    if (programObject == 0) {
-        return false;
-    }
-    userData->programObject = programObject;
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    return true;
-}
-
 static void
-draw(void* data)
-{
-    const auto* userData = static_cast<UserData*>(data);
-
-    // Set the viewport
-    glViewport(0, 0, kWidth, kHeight);
-
-    // Clear the color buffer
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Use the program object
-    glUseProgram(userData->programObject);
-
-    // Set color (set value to a_color with location=0)
-    // (each vertices take get the same color)
-    static constexpr GLfloat color[] = {1.0f, 0.0f, 0.0f, 1.0f};
-    glVertexAttrib4fv(0 /* corresponds to location=0 */, color);
-
-    // Set vertices positions (set value to a_position with location=1)
-    // (each vertices get position from this array)
-    static constexpr GLfloat vertexPos[3 * 3] = {
-        0.0f,  0.5f, 0.0f, // v0
-       -0.5f, -0.5f, 0.0f, // v1
-        0.5f, -0.5f, 0.0f, // v2
-    };
-    glVertexAttribPointer(1 /* corresponds to location=1 */, 3, GL_FLOAT, GL_FALSE, 0, vertexPos);
-
-    glEnableVertexAttribArray(1 /* corresponds to location=1 */); // Enable vertex attrib array
-    /* Data specified using vertex arrays is copied on each call (not sufficient) */
-    glDrawArrays(GL_TRIANGLES, 0, 3 /* specify the number of vertices */);
-    glDisableVertexAttribArray(1 /* corresponds to location=1 */); // Disable vertex attrib array
-}
-
+onWindowResize(GLFWwindow* window, int width, int height);
 static void
-shutdown(void* data)
-{
-    const auto* userData = static_cast<UserData*>(data);
-
-    glDeleteProgram(userData->programObject);
-}
+onWindowInput(GLFWwindow* window);
 
 int
 main()
 {
-    x11::NativeDisplay display;
-    x11::NativeWindow window{display};
-    window.create("Example02", kWidth, kHeight);
+    glfwInit();
 
-    Platform platform;
-    if (not platform.configure(display, window, ES_WINDOW_RGB)) {
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "example02", nullptr, nullptr);
+    if (window == nullptr) {
+        SPDLOG_ERROR("Failed to create GLFW window");
+        glfwTerminate();
+        return EXIT_FAILURE;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, onWindowResize);
+
+    if (const int version = gladLoadGL(glfwGetProcAddress); version > 0) {
+        SPDLOG_INFO("Initialized OpenGL {}.{} version",
+                    GLAD_VERSION_MAJOR(version),
+                    GLAD_VERSION_MINOR(version));
+    } else {
+        SPDLOG_ERROR("Failed to initialize OpenGL context");
         return EXIT_FAILURE;
     }
 
-    platform.registerPrepareFunc(std::bind_front(&prepare));
-    platform.registerDrawFunc(std::bind_front(&draw));
-    platform.registerShutdownFunc(std::bind_front(&shutdown));
+    {
+        const glesy::Shader shader(vShader, fShader);
 
-    UserData data;
-    if (not platform.process(window, &data)) {
-        std::cerr << "Error processing" << std::endl;
-        return EXIT_FAILURE;
+        glViewport(0, 0, kWidth, kHeight);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        unsigned int VBO, VAO;
+        glGenVertexArrays(1, &VAO);
+        glBindVertexArray(VAO);
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(kVertexData), kVertexData, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(kVertexPosIndex);
+        glVertexAttribPointer(kVertexPosIndex,
+                              kVertexPosSize,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
+                              nullptr);
+        glEnableVertexAttribArray(kVertexColorIndex);
+        glVertexAttribPointer(kVertexColorIndex,
+                              kVertexColorSize,
+                              GL_FLOAT,
+                              GL_FALSE,
+                              sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
+                              reinterpret_cast<const void*>(kVertexPosSize * sizeof(GLfloat)));
+        glBindVertexArray(0);
+
+        while (not glfwWindowShouldClose(window)) {
+            onWindowInput(window);
+
+            // Clear the color buffer
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // Activate shader program
+            shader.use();
+
+            // Bind array arrays object (state) and draw
+            glBindVertexArray(VAO);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            // Swap back and front buffers
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
     }
 
+    glfwTerminate();
     return EXIT_SUCCESS;
+}
+
+static void
+onWindowInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+}
+
+static void
+onWindowResize(GLFWwindow* /*window*/, const int width, const int height)
+{
+    glViewport(0, 0, width, height);
 }

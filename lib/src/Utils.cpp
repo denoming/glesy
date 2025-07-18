@@ -12,7 +12,7 @@ loadShader(GLenum type, const GLchar* shaderSrc)
     // Create the shader object
     const GLuint shader = glCreateShader(type);
     if (shader == 0) {
-        SPDLOG_ERROR("Unable to create shader: error<{}>", eglGetError());
+        SPDLOG_ERROR("Unable to create shader: error<{}>", glGetError());
         return 0;
     }
 
@@ -59,7 +59,7 @@ loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
     // Create the program object
     const GLuint programObject = glCreateProgram();
     if (programObject == 0) {
-        SPDLOG_ERROR("Unable to create program: error<{}>", eglGetError());
+        SPDLOG_ERROR("Unable to create program: error<{}>", glGetError());
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
         return 0;
