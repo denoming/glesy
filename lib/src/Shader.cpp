@@ -30,4 +30,22 @@ Shader::use() const
     glUseProgram(_program);
 }
 
+void
+Shader::setBool(const std::string& name, const bool value) const
+{
+    glUniform1i(glGetUniformLocation(_program, name.data()), static_cast<int>(value));
+}
+
+void
+Shader::setInt(const std::string& name, const int value) const
+{
+    glUniform1i(glGetUniformLocation(_program, name.data()), value);
+}
+
+void
+Shader::setFloat(const std::string& name, const float value) const
+{
+    glUniform1f(glGetUniformLocation(_program, name.data()), value);
+}
+
 } // namespace glesy

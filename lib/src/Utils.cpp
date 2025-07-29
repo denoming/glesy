@@ -3,26 +3,22 @@
 #include <spdlog/spdlog.h>
 
 #include <vector>
+#include <fstream>
 
 namespace glesy {
 
 GLuint
-loadShader(GLenum type, const GLchar* shaderSrc)
+loadShader(const GLenum type, const GLchar* shaderSrc)
 {
-    // Create the shader object
     const GLuint shader = glCreateShader(type);
     if (shader == 0) {
         SPDLOG_ERROR("Unable to create shader: error<{}>", glGetError());
         return 0;
     }
 
-    // Load the shader source
     glShaderSource(shader, 1, &shaderSrc, nullptr);
-
-    // Compile the shader
     glCompileShader(shader);
 
-    // Check the compile status
     GLint compiled{};
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
     if (compiled != GL_TRUE) {
@@ -40,38 +36,80 @@ loadShader(GLenum type, const GLchar* shaderSrc)
 }
 
 GLuint
-loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
+loadShader(const GLenum type, const std::filesystem::path& path)
 {
-    // Load the vertex/fragment shaders
-    const GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexShaderSrc);
+    try {
+        std::ifstream file;
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        file.open(path);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+        return loadShader(type, buffer.view().data());
+    } catch (const std::exception& e) {
+        SPDLOG_ERROR("Unable to load shader: {}", e.what());
+        return 0;
+    }
+}
+
+GLuint
+loadProgram(const GLchar* vertexSrc, const GLchar* fragmentSrc)
+{
+    const GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexSrc);
     if (vertexShader == 0) {
         SPDLOG_ERROR("Unable to load vertex shader");
         return 0;
     }
 
-    const GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragShaderSrc);
+    const GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentSrc);
     if (fragmentShader == 0) {
         SPDLOG_ERROR("Unable to load fragment shader");
         glDeleteShader(vertexShader);
         return 0;
     }
 
-    // Create the program object
+    const GLuint programId = createProgram(vertexShader, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return programId;
+}
+
+GLuint
+loadProgram(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
+{
+    const GLuint vertexShader = loadShader(GL_VERTEX_SHADER, vertexPath);
+    if (vertexShader == 0) {
+        SPDLOG_ERROR("Unable to load vertex shader");
+        return 0;
+    }
+
+    const GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, fragmentPath);
+    if (fragmentShader == 0) {
+        SPDLOG_ERROR("Unable to load fragment shader");
+        glDeleteShader(vertexShader);
+        return 0;
+    }
+
+    const GLuint programId = createProgram(vertexShader, fragmentShader);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    return programId;
+}
+
+GLuint
+createProgram(const GLuint vertexShader, const GLuint fragmentShader)
+{
     const GLuint programObject = glCreateProgram();
     if (programObject == 0) {
         SPDLOG_ERROR("Unable to create program: error<{}>", glGetError());
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
         return 0;
     }
 
     glAttachShader(programObject, vertexShader);
     glAttachShader(programObject, fragmentShader);
 
-    // Link the program
     glLinkProgram(programObject);
 
-    // Check the link status
     GLint linked{};
     glGetProgramiv(programObject, GL_LINK_STATUS, &linked);
     if (linked != GL_TRUE) {
@@ -84,10 +122,6 @@ loadProgram(const GLchar* vertexShaderSrc, const GLchar* fragShaderSrc)
         glDeleteProgram(programObject);
         return 0;
     }
-
-    // Free up no longer needed shader resources
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
     return programObject;
 }
