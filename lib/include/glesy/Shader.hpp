@@ -10,6 +10,9 @@ public:
 
     ~Shader();
 
+    [[nodiscard]] GLuint
+    id() const;
+
     void
     use() const;
 

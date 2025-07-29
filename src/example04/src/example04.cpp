@@ -1,6 +1,5 @@
 /**
- * Example 02: Demonstrates using VBO and VAO objects.
- *             Use constant vertex attribute to set color.
+ * Example 04: Demonstrates using uniforms to set color dynamically
  **/
 
 #include "glesy/Api.h"
@@ -14,28 +13,25 @@ static constexpr unsigned int kWidth{800};
 static constexpr unsigned int kHeight{600};
 static constexpr int kVertexPosSize{3};
 static constexpr int kVertexPosIndex{0};
-static constexpr int kVertexColorSize{4};
-static constexpr int kVertexColorIndex{1};
 
 // clang-format off
 static constexpr GLfloat kVertexData[] = {
-    0.0f,  0.5f,  0.0f,       // v0
-    1.0f,  0.0f,  0.0f, 1.0f, // c0
-    -0.5f, -0.5f, 0.0f,       // v1
-    0.0f,  1.0f,  0.0f, 1.0f, // c1
-    0.5f,  -0.5f, 0.0f,       // v2
-    0.0f,  0.0f,  1.0f, 1.0f, // c2
+    0.5f,  0.5f, 0.0f,  // top right
+    0.5f, -0.5f, 0.0f,  // bottom right
+   -0.5f, -0.5f, 0.0f,  // bottom left
+   -0.5f,  0.5f, 0.0f,   // top left
+};
+static constexpr GLuint kIndices[] = {
+    0, 1, 3,   // first triangle
+    1, 2, 3    // second triangle
 };
 // clang-format on
 
 static auto vShader = R"glsl(
 #version 330 core
 layout(location = 0) in vec4 a_position;
-layout(location = 1) in vec4 a_color;
-out vec4 v_color;
 void main()
 {
-    v_color = a_color;
     gl_Position = a_position;
 }
 )glsl";
@@ -43,11 +39,11 @@ void main()
 static auto fShader = R"glsl(
 #version 330 core
 precision mediump float;
-in vec4 v_color;
 out vec4 o_fragColor;
+uniform vec4 ourColor;
 void main()
 {
-    o_fragColor = v_color;
+    o_fragColor = ourColor;
 }
 )glsl";
 
@@ -85,33 +81,35 @@ main()
 
     {
         const glesy::Shader shader(vShader, fShader);
+        int vertexColorLocation = glGetUniformLocation(shader.id(), "ourColor");
 
         glViewport(0, 0, kWidth, kHeight);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+#if 0
+        // Enable wareframe mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
 
-        unsigned int VBO, VAO;
+        unsigned int VBO{}, VAO{}, EBO{};
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
         {
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(kVertexData), kVertexData, GL_STATIC_DRAW);
-            glEnableVertexAttribArray(kVertexPosIndex);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_STATIC_DRAW);
             glVertexAttribPointer(kVertexPosIndex,
                                   kVertexPosSize,
                                   GL_FLOAT,
                                   GL_FALSE,
-                                  sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
-                                  (void*) 0);
-            glEnableVertexAttribArray(kVertexColorIndex);
-            glVertexAttribPointer(kVertexColorIndex,
-                                  kVertexColorSize,
-                                  GL_FLOAT,
-                                  GL_FALSE,
-                                  sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
-                                  (void*) (kVertexPosSize * sizeof(GLfloat)));
-            glBindVertexArray(0);
+                                  sizeof(GLfloat) * (kVertexPosSize),
+                                  (void*)0);
+            glEnableVertexAttribArray(kVertexPosIndex);
         }
 
         while (not glfwWindowShouldClose(window)) {
@@ -123,9 +121,14 @@ main()
             // Activate shader program
             shader.use();
 
+            // Update color uniform value
+            const float greenValue = (std::sin(static_cast<float>(glfwGetTime())) / 2.0f) + 0.5f;
+            glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
             // Bind array arrays object (state) and draw
             glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
 
             // Swap back and front buffers
             glfwSwapBuffers(window);

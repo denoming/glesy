@@ -1,6 +1,6 @@
 /**
- * Example 02: Demonstrates using VBO and VAO objects.
- *             Use constant vertex attribute to set color.
+ * Example 03: Demonstrates using VBO, VAO and EBO objects to draw rectangle
+ *             using only 4 vertices instead of 6 (as OpenGL with triangles only).
  **/
 
 #include "glesy/Api.h"
@@ -19,12 +19,18 @@ static constexpr int kVertexColorIndex{1};
 
 // clang-format off
 static constexpr GLfloat kVertexData[] = {
-    0.0f,  0.5f,  0.0f,       // v0
+    0.5f,  0.5f, 0.0f,  // top right
     1.0f,  0.0f,  0.0f, 1.0f, // c0
-    -0.5f, -0.5f, 0.0f,       // v1
+    0.5f, -0.5f, 0.0f,  // bottom right
     0.0f,  1.0f,  0.0f, 1.0f, // c1
-    0.5f,  -0.5f, 0.0f,       // v2
-    0.0f,  0.0f,  1.0f, 1.0f, // c2
+   -0.5f, -0.5f, 0.0f,  // bottom left
+    0.0f,  0.0f, 1.0f, 1.0f, // c0
+   -0.5f,  0.5f, 0.0f,   // top left
+    1.0f,  0.647f,  0.0f, 1.0f, // c1
+};
+static constexpr GLuint kIndices[] = {
+    0, 1, 3,   // first triangle
+    1, 2, 3    // second triangle
 };
 // clang-format on
 
@@ -88,30 +94,38 @@ main()
 
         glViewport(0, 0, kWidth, kHeight);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+#if 0
+        // Enable wareframe mode
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
 
-        unsigned int VBO, VAO;
+        unsigned int VBO{}, VAO{}, EBO{};
         glGenVertexArrays(1, &VAO);
         glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
 
         {
             glBindVertexArray(VAO);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(kVertexData), kVertexData, GL_STATIC_DRAW);
-            glEnableVertexAttribArray(kVertexPosIndex);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(kIndices), kIndices, GL_STATIC_DRAW);
             glVertexAttribPointer(kVertexPosIndex,
                                   kVertexPosSize,
                                   GL_FLOAT,
                                   GL_FALSE,
                                   sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
                                   (void*) 0);
-            glEnableVertexAttribArray(kVertexColorIndex);
+            glEnableVertexAttribArray(kVertexPosIndex);
             glVertexAttribPointer(kVertexColorIndex,
                                   kVertexColorSize,
                                   GL_FLOAT,
                                   GL_FALSE,
                                   sizeof(GLfloat) * (kVertexPosSize + kVertexColorSize),
                                   (void*) (kVertexPosSize * sizeof(GLfloat)));
-            glBindVertexArray(0);
+            glEnableVertexAttribArray(kVertexColorIndex);
         }
 
         while (not glfwWindowShouldClose(window)) {
@@ -125,7 +139,8 @@ main()
 
             // Bind array arrays object (state) and draw
             glBindVertexArray(VAO);
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
 
             // Swap back and front buffers
             glfwSwapBuffers(window);

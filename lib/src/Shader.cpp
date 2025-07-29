@@ -18,6 +18,12 @@ Shader::~Shader()
     glDeleteProgram(_program);
 }
 
+GLuint
+Shader::id() const
+{
+    return _program;
+}
+
 void
 Shader::use() const
 {
