@@ -4,5 +4,6 @@ include(AddSpdLog)
 include(AddEgl)
 include(AddX11)
 include(AddGlfw)
+include(AddPng)
 
 include(BuildType)

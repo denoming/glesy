@@ -61,7 +61,7 @@ main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "example02", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "example04", nullptr, nullptr);
     if (window == nullptr) {
         SPDLOG_ERROR("Failed to create GLFW window");
         glfwTerminate();

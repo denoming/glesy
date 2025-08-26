@@ -17,6 +17,7 @@ target_sources(${TARGET}
     PRIVATE
         src/Utils.cpp
         src/Shader.cpp
+        src/Texture.cpp
 )
 
 target_compile_features(${TARGET} PUBLIC cxx_std_23)
